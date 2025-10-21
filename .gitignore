@@ -1,0 +1,21 @@
+# Виртуальное окружение
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+
+# Статика и медиа
+/staticfiles/
+/media/
+
+# Системные файлы
+.DS_Store
+.env
