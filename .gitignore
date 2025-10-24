@@ -19,3 +19,4 @@ __pycache__/
 # Системные файлы
 .DS_Store
 .env
+README_1.md

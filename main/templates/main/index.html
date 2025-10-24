@@ -1,0 +1,159 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Куда пойти — Москва глазами Артёма</title>
+
+  <link rel="shortcut icon" href="{% static 'main/img/favicon.png' %}" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- Leaflet & Sidebar -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin=""/>
+  <link rel="stylesheet" href="{% static 'main/css/leaflet-sidebar.css' %}"/>
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+  <!-- Leaflet Pulse Icon -->
+  <link rel="stylesheet" href="https://unpkg.com/@ansur/leaflet-pulse-icon@0.1.1/dist/L.Icon.Pulse.css">
+
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+
+    html, body, #map {
+      height: 100%;
+    }
+
+    .place-description img {
+      max-width: 100%;
+    }
+
+    .sidebar-content {
+      padding: 14px 20px;
+      height: 100%;
+    }
+
+    .select-place-prompt {
+      color: red;
+      width: 100px;
+    }
+  </style>
+
+  <!-- Данные точек -->
+  <script id="places-geojson" type="application/json">
+    {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [37.64912239999976, 55.77754550000014]
+          },
+          "properties": {
+            "title": "«Легенды Москвы»",
+            "placeId": "moscow_legends",
+            "detailsUrl": "{% static 'main/places/moscow_legends.json' %}"
+          }
+        },
+        {
+          "type": "Feature",
+          "geometry": {
+            "type": "Point",
+            "coordinates": [37.32478399999957, 55.70731600000015]
+          },
+          "properties": {
+            "title": "Крыши24.рф",
+            "placeId": "roofs24",
+            "detailsUrl": "{% static 'main/places/roofs24.json' %}"
+          }
+        }
+      ]
+    }
+  </script>
+
+  <!-- Vue шаблон -->
+  <script id="app-template" type="text/template">
+    <div v-bind:class="{'sidebar-content': 1, 'bg-white': selectedPlace, 'bg-secondary': !selectedPlace}">
+      <div v-if="promptVisible" class="d-flex flex-column justify-content-center align-items-center" style="height: 100%;">
+        <img class="d-block select-place-prompt mb-4" src="{% static 'main/img/hand-pointer-regular.svg' %}" alt="Select place">
+        <h4>Выберите место на карте</h4>
+      </div>
+
+      <div class="align-items-center justify-content-center d-flex" v-if="loading" style="height: 100%;">
+        <div class="spinner-grow text-light" style="width: 3rem; height: 3rem;" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+
+      <div class="place-description" v-if="selectedPlace">
+        <img v-if="mainPhotoSrc" v-bind:src="mainPhotoSrc" class="d-block shadow mb-3 rounded" v-bind:alt="selectedPlace.title">
+        <h5 class="mb-3">{{ selectedPlace.title }}</h5>
+        <p>{{ selectedPlace.short_description }}</p>
+
+        <div id="place-photos" class="carousel slide mb-3 shadow" data-ride="carousel" data-interval="5000">
+          <ol class="carousel-indicators">
+            <template v-for="(img, index) in carouselImgs" :key="img">
+              <li v-on:click="handlePhotosClick(index)" v-bind:class="{active: index==0}"></li>
+            </template>
+          </ol>
+          <div class="carousel-inner">
+            <template v-for="(img, index) in carouselImgs" :key="img">
+              <div v-bind:class="{'carousel-item bg-light': 1, active: index==0}">
+                <img v-bind:src="img" class="d-block w-100" v-bind:alt="selectedPlace.title">
+              </div>
+            </template>
+          </div>
+          <template v-if="carouselImgs.length">
+            <a class="carousel-control-prev" v-on:click="handlePhotosClick('prev')" role="button">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="sr-only">Previous</span>
+            </a>
+            <a class="carousel-control-next" v-on:click="handlePhotosClick('next')" role="button">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="sr-only">Next</span>
+            </a>
+          </template>
+        </div>
+
+        <div v-html="selectedPlace.long_description"></div>
+      </div>
+    </div>
+  </script>
+
+</head>
+<body>
+  <!-- Кнопка "Админка" -->
+  <div style="position: absolute; top: 10px; left: 40px; z-index: 9999;">
+    <a href="/admin/" target="_blank" class="btn btn-primary">Админка</a>
+  </div>
+
+  <div id="sidebar">
+    <div id="sidebar-app"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <!-- Скрипты -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-providers/1.10.1/leaflet-providers.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/leaflet-control-custom@1.0.0/Leaflet.Control.Custom.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/loglevel/1.6.8/loglevel.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@ansur/leaflet-pulse-icon@0.1.1/dist/L.Icon.Pulse.js"></script>
+  <script src="{% static 'main/js/leaflet-sidebar.js' %}"></script>
+  <script src="{% static 'main/js/app.js' %}"></script>
+</body>
+</html>
