@@ -16,9 +16,16 @@ class Category(models.Model):
 class Place(models.Model):
     """Основная модель для описания интересных мест."""
     title = models.CharField(max_length=200, verbose_name="Название места")
-    description = models.TextField(verbose_name="Описание", blank=True)
+    short_description = models.TextField(verbose_name="Краткое описание", blank=True)
+    description = models.TextField(verbose_name="Полное описание", blank=True)
     latitude = models.FloatField(verbose_name="Широта")
     longitude = models.FloatField(verbose_name="Долгота")
+    main_image = models.ImageField(
+        upload_to="places_main/",
+        verbose_name="Главное изображение",
+        blank=True,
+        null=True
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
@@ -42,7 +49,7 @@ class Image(models.Model):
         related_name="images",
         verbose_name="Место"
     )
-    image = models.ImageField(upload_to="places_images/", verbose_name="Фотография")
+    image = models.ImageField(upload_to="places_gallery/", verbose_name="Фотография")
     description = models.CharField(max_length=255, verbose_name="Описание", blank=True)
 
     class Meta:
@@ -51,4 +58,3 @@ class Image(models.Model):
 
     def __str__(self):
         return f"Фото {self.id} для {self.place.title}"
-

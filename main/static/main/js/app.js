@@ -1,135 +1,116 @@
-// === Создаем карту ===
-const map = L.map('map', {
-  center: [55.753676, 37.64],
-  zoom: 12
-});
+document.addEventListener('DOMContentLoaded', () => {
+  const map = L.map('map', {
+    center: [55.751244, 37.618423],
+    zoom: 10
+  });
 
-// === Добавляем слой карты ===
-L.tileLayer.provider('OpenStreetMap.Mapnik').addTo(map);
-
-// === Добавляем боковую панель ===
-const sidebar = L.control.sidebar('sidebar', {
-  autopan: true,
-  closeButton: true,
-  position: 'right'
-}).addTo(map);
-
-// === Пульсирующая иконка ===
-const pulsingIcon = L.icon.pulse({
-  iconSize: [12, 12],
-  color: 'red',
-  fillColor: 'red',
-  heartbeat: 2.5
-});
-
-// === Читаем GeoJSON ===
-const geojsonElement = document.getElementById('places-geojson');
-let placesGeoJSON = null;
-
-try {
-  placesGeoJSON = JSON.parse(geojsonElement.textContent);
-} catch (e) {
-  console.error('Ошибка чтения GeoJSON:', e);
-}
-
-// === Добавляем метки ===
-if (placesGeoJSON) {
-  L.geoJSON(placesGeoJSON, {
-    pointToLayer: (feature, latlng) => {
-      const marker = L.marker(latlng, { icon: pulsingIcon });
-      marker.bindTooltip(feature.properties.title);
-
-      marker.on('click', async () => {
-        try {
-          const response = await fetch(feature.properties.detailsUrl);
-          if (!response.ok) throw new Error('Ошибка загрузки данных о месте');
-          const data = await response.json();
-
-          // Отображаем данные в боковой панели
-          sidebar.setContent(`
-            <div class="sidebar-content">
-              <h3>${data.title}</h3>
-              ${data.imgs && data.imgs.length
-                ? `<img src="${data.imgs[0]}" class="img-fluid rounded mb-3" alt="${data.title}">`
-                : ''
-              }
-              <p>${data.description_short || ''}</p>
-              ${data.imgs && data.imgs.length > 1
-                ? `
-                <div id="carouselPlacePhotos" class="carousel slide mb-3" data-ride="carousel" data-interval="5000">
-                  <div class="carousel-inner">
-                    ${data.imgs.map((img, i) => `
-                      <div class="carousel-item ${i === 0 ? 'active' : ''}">
-                        <img src="${img}" class="d-block w-100 rounded" alt="${data.title}">
-                      </div>
-                    `).join('')}
-                  </div>
-                  <a class="carousel-control-prev" href="#carouselPlacePhotos" role="button" data-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Previous</span>
-                  </a>
-                  <a class="carousel-control-next" href="#carouselPlacePhotos" role="button" data-slide="next">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                    <span class="sr-only">Next</span>
-                  </a>
-                </div>` : ''
-              }
-            </div>
-          `);
-
-          // Инициализация карусели после вставки
-          setTimeout(() => {
-            const carouselEl = document.getElementById('carouselPlacePhotos');
-            if (carouselEl) {
-              // Запускаем Bootstrap-карусель вручную
-              $(carouselEl).carousel();
-
-              // Разрешаем клики по стрелкам внутри боковой панели
-              const prev = carouselEl.querySelector('.carousel-control-prev');
-              const next = carouselEl.querySelector('.carousel-control-next');
-              if (prev && next) {
-                L.DomEvent.disableClickPropagation(prev);
-                L.DomEvent.disableClickPropagation(next);
-                prev.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  $(carouselEl).carousel('prev');
-                });
-                next.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  $(carouselEl).carousel('next');
-                });
-              }
-            }
-          }, 200);
-
-          sidebar.show();
-        } catch (err) {
-          console.error('Ошибка при загрузке места:', err);
-        }
-      });
-
-      return marker;
-    }
+  // Подложка карты
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
-}
 
-// === Кнопка отладки ===
-L.control.custom({
-  position: 'bottomleft',
-  content: `
-    <div class="debug-btn" title="Отладка">
-      <img src="/static/main/img/debug-option.png" alt="Отладка">
-    </div>
-  `,
-  style: { margin: '10px', cursor: 'pointer' },
-  events: {
-    click: function () {
-      console.log('🧭 Отладка:');
-      console.log('Центр карты:', map.getCenter());
-      console.log('Масштаб:', map.getZoom());
-      alert('Открой консоль (F12), чтобы увидеть данные о карте.');
+  // Сайдбар
+  const sidebar = L.control.sidebar('sidebar', { position: 'right' }).addTo(map);
+
+  // Пульсирующая иконка
+  const pulseIcon = L.icon.pulse({
+    iconSize: [12, 12],
+    color: 'red',
+    heartbeat: 2.5
+  });
+
+  // Vue-приложение для сайдбара
+  const app = new Vue({
+    el: '#sidebar-app',
+    template: '#app-template',
+    data: {
+      selectedPlace: null,
+      mainPhotoSrc: null,
+      carouselImgs: [],
+      promptVisible: true,
+      loading: false
+    },
+    methods: {
+      handlePhotosClick(direction) {
+        const carouselEl = $('#place-photos');
+        if (!carouselEl.length) return;
+
+        if (direction === 'next' || direction === 'prev') {
+          carouselEl.carousel(direction);
+        } else {
+          carouselEl.carousel(direction);
+        }
+      },
+      setPlaceData(place) {
+        const base = window.location.origin;
+        const fixUrl = url => (url && !url.startsWith('http') ? `${base}${url}` : url);
+
+        const gallery = Array.isArray(place.images)
+          ? place.images.filter(Boolean).map(fixUrl)
+          : [];
+
+        const main = fixUrl(place.main_image);
+
+        // 🔧 Объединяем главную и галерею
+        const allImgs = [main, ...gallery].filter(Boolean);
+
+        this.mainPhotoSrc = main || (allImgs.length ? allImgs[0] : null);
+        this.selectedPlace = {
+          title: place.title,
+          short_description: place.short_description || '',
+          long_description: place.long_description || ''
+        };
+        this.carouselImgs = allImgs;
+
+        this.promptVisible = false;
+        this.loading = false;
+
+        // 🧠 Даем Vue отрисовать, затем активируем Bootstrap-слайдер
+        this.$nextTick(() => {
+          const carouselEl = $('#place-photos');
+          if (carouselEl.length) {
+            carouselEl.carousel({ interval: 5000 });
+          }
+        });
+      }
     }
-  }
-}).addTo(map);
+  });
+
+  // Загрузка GeoJSON
+  fetch('/places.geojson')
+    .then(r => r.json())
+    .then(data => {
+      const markers = L.geoJSON(data, {
+        pointToLayer: (feature, latlng) => {
+          const marker = L.marker(latlng, { icon: pulseIcon });
+          marker.bindTooltip(feature.properties.title || '');
+
+          marker.on('click', () => {
+            sidebar.show();
+            app.loading = true;
+
+            fetch(feature.properties.detailsUrl)
+              .then(r => {
+                if (!r.ok) throw new Error('Не удалось загрузить данные места');
+                return r.json();
+              })
+              .then(placeData => {
+                app.setPlaceData(placeData);
+              })
+              .catch(err => {
+                console.error('Ошибка загрузки места:', err);
+                app.loading = false;
+              });
+          });
+
+          return marker;
+        }
+      }).addTo(map);
+
+      // Центрирование карты
+      if (markers.getLayers().length) {
+        map.fitBounds(markers.getBounds().pad(0.15));
+      }
+    })
+    .catch(err => console.error('Ошибка загрузки places.geojson:', err));
+});
