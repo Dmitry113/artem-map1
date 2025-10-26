@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.html import mark_safe
 
 
 class Category(models.Model):
@@ -40,6 +41,13 @@ class Place(models.Model):
     def __str__(self):
         return self.title
 
+    def main_image_preview(self):
+        """Миниатюра главного изображения для админки."""
+        if self.main_image:
+            return mark_safe(f'<img src="{self.main_image.url}" style="height:100px;"/>')
+        return ""
+    main_image_preview.short_description = "Превью главного изображения"
+
 
 class Image(models.Model):
     """Фотографии, связанные с местом."""
@@ -58,3 +66,10 @@ class Image(models.Model):
 
     def __str__(self):
         return f"Фото {self.id} для {self.place.title}"
+
+    def preview(self):
+        """Возвращает HTML для миниатюры в админке."""
+        if self.image:
+            return mark_safe(f'<img src="{self.image.url}" style="height:100px;"/>')
+        return ""
+    preview.short_description = "Превью"

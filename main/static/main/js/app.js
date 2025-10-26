@@ -31,16 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
       loading: false
     },
     methods: {
-      handlePhotosClick(direction) {
-        const carouselEl = $('#place-photos');
-        if (!carouselEl.length) return;
-
-        if (direction === 'next' || direction === 'prev') {
-          carouselEl.carousel(direction);
-        } else {
-          carouselEl.carousel(direction);
-        }
-      },
       setPlaceData(place) {
         const base = window.location.origin;
         const fixUrl = url => (url && !url.startsWith('http') ? `${base}${url}` : url);
@@ -51,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const main = fixUrl(place.main_image);
 
-        // 🔧 Объединяем главную и галерею
         const allImgs = [main, ...gallery].filter(Boolean);
 
         this.mainPhotoSrc = main || (allImgs.length ? allImgs[0] : null);
@@ -65,22 +54,37 @@ document.addEventListener('DOMContentLoaded', () => {
         this.promptVisible = false;
         this.loading = false;
 
-        // 🧠 Даем Vue отрисовать, затем активируем Bootstrap-слайдер
+        // Инициализация карусели после рендера Vue
         this.$nextTick(() => {
           const carouselEl = $('#place-photos');
           if (carouselEl.length) {
+            // Инициализация Bootstrap карусели
             carouselEl.carousel({ interval: 5000 });
+
+            // Привязка стрелок заново
+            carouselEl.find('.carousel-control-prev').off('click').on('click', function () {
+              carouselEl.carousel('prev');
+            });
+            carouselEl.find('.carousel-control-next').off('click').on('click', function () {
+              carouselEl.carousel('next');
+            });
+
+            // Индикаторы
+            carouselEl.find('.carousel-indicators li').off('click').on('click', function () {
+              const index = $(this).index();
+              carouselEl.carousel(index);
+            });
           }
         });
       }
     }
   });
 
-  // Загрузка GeoJSON
+  // Загрузка GeoJSON и добавление маркеров
   fetch('/places.geojson')
     .then(r => r.json())
     .then(data => {
-      const markers = L.geoJSON(data, {
+      const geoLayer = L.geoJSON(data, {
         pointToLayer: (feature, latlng) => {
           const marker = L.marker(latlng, { icon: pulseIcon });
           marker.bindTooltip(feature.properties.title || '');
@@ -90,15 +94,12 @@ document.addEventListener('DOMContentLoaded', () => {
             app.loading = true;
 
             fetch(feature.properties.detailsUrl)
-              .then(r => {
-                if (!r.ok) throw new Error('Не удалось загрузить данные места');
-                return r.json();
-              })
+              .then(res => res.json())
               .then(placeData => {
                 app.setPlaceData(placeData);
               })
               .catch(err => {
-                console.error('Ошибка загрузки места:', err);
+                console.error('Ошибка загрузки данных места:', err);
                 app.loading = false;
               });
           });
@@ -107,9 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }).addTo(map);
 
-      // Центрирование карты
-      if (markers.getLayers().length) {
-        map.fitBounds(markers.getBounds().pad(0.15));
+      // Автоцентровка карты
+      if (geoLayer.getLayers().length) {
+        map.fitBounds(geoLayer.getBounds().pad(0.15));
       }
     })
     .catch(err => console.error('Ошибка загрузки places.geojson:', err));
