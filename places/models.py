@@ -59,10 +59,12 @@ class Image(models.Model):
     )
     image = models.ImageField(upload_to="places_gallery/", verbose_name="Фотография")
     description = models.CharField(max_length=255, verbose_name="Описание", blank=True)
+    order = models.PositiveIntegerField(default=0, verbose_name="Порядок")  # <-- новое поле
 
     class Meta:
         verbose_name = "Фотография"
         verbose_name_plural = "Фотографии"
+        ordering = ['order']  # сортировка по этому полю
 
     def __str__(self):
         return f"Фото {self.id} для {self.place.title}"

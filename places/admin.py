@@ -1,12 +1,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from adminsortable2.admin import SortableAdminBase, SortableInlineAdminMixin
 from .models import Place, Image, Category
 
 
-class ImageInline(admin.TabularInline):
-    """Позволяет добавлять фотографии прямо на странице места."""
+class ImageInline(SortableInlineAdminMixin, admin.TabularInline):
+    """Позволяет добавлять фотографии прямо на странице места и менять их порядок."""
     model = Image
-    extra = 1  # Показывать одно пустое поле для добавления нового фото
+    extra = 1
     fields = ('image', 'description', 'preview',)
     readonly_fields = ('preview',)
     verbose_name = "Фотография"
@@ -22,12 +23,12 @@ class ImageInline(admin.TabularInline):
 
 
 @admin.register(Place)
-class PlaceAdmin(admin.ModelAdmin):
+class PlaceAdmin(SortableAdminBase, admin.ModelAdmin):
+    """Админка для места с сортируемыми фотографиями."""
     list_display = ('title', 'category', 'latitude', 'longitude', 'main_image_preview')
     search_fields = ('title', 'category__name')
     list_filter = ('category',)
     inlines = [ImageInline]
-
     readonly_fields = ('main_image_preview',)
 
     def main_image_preview(self, obj):

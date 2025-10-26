@@ -1,5 +1,6 @@
 asgiref==3.10.0
 Django==5.0.6
+django-admin-sortable2==2.2.8
 djangorestframework==3.16.1
 drf-yasg==1.21.11
 inflection==0.5.1
