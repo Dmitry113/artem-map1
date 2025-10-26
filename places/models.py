@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils.html import mark_safe
-
+from ckeditor.fields import RichTextField  # CKEditor 4
 
 class Category(models.Model):
     """Категория места — парк, музей, двор, кафе и т.п."""
@@ -17,8 +17,8 @@ class Category(models.Model):
 class Place(models.Model):
     """Основная модель для описания интересных мест."""
     title = models.CharField(max_length=200, verbose_name="Название места")
-    short_description = models.TextField(verbose_name="Краткое описание", blank=True)
-    description = models.TextField(verbose_name="Полное описание", blank=True)
+    short_description = RichTextField(verbose_name="Краткое описание", blank=True)
+    description = RichTextField(verbose_name="Полное описание", blank=True)
     latitude = models.FloatField(verbose_name="Широта")
     longitude = models.FloatField(verbose_name="Долгота")
     main_image = models.ImageField(
@@ -59,12 +59,12 @@ class Image(models.Model):
     )
     image = models.ImageField(upload_to="places_gallery/", verbose_name="Фотография")
     description = models.CharField(max_length=255, verbose_name="Описание", blank=True)
-    order = models.PositiveIntegerField(default=0, verbose_name="Порядок")  # <-- новое поле
+    order = models.PositiveIntegerField(default=0, verbose_name="Порядок")  # для сортировки
 
     class Meta:
         verbose_name = "Фотография"
         verbose_name_plural = "Фотографии"
-        ordering = ['order']  # сортировка по этому полю
+        ordering = ["order"]  # сортировка по полю order
 
     def __str__(self):
         return f"Фото {self.id} для {self.place.title}"

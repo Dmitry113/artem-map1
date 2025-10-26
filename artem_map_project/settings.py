@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'main',
     'places',
+    'ckeditor',
+    'ckeditor_uploader',
+    "django_ckeditor_5",
 ]
 
 MIDDLEWARE = [
@@ -134,3 +137,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',
+        'height': 300,
+        'width': '100%',
+    },
+}
+
+
+# Папка для загруженных файлов редактора
+CKEDITOR_5_UPLOAD_PATH = "uploads/"
+
+# Можно настроить тип редактора: Classic, Inline, Balloon и др.
+CKEDITOR_5_CONFIGS = {
+    "default": {
+        "toolbar": "full",
+        "height": 300,
+        "width": "100%",
+    },
+}
+
+
+CKEDITOR_UPLOAD_PATH = "uploads/"
