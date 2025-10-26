@@ -166,3 +166,6 @@ CKEDITOR_5_CONFIGS = {
 
 
 CKEDITOR_UPLOAD_PATH = "uploads/"
+
+# Папка, куда Django будет собирать статические файлы при deploy
+STATIC_ROOT = BASE_DIR / 'staticfiles'
