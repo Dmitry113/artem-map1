@@ -26,8 +26,11 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'krdv13.pythonanywhere.com']
+ALLOWED_HOSTS = os.getenv(
+    'DJANGO_ALLOWED_HOSTS',
+    '127.0.0.1, localhost, krdv13.pythonanywhere.com'
+).split(',')
+
 
 
 
@@ -135,6 +138,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'main' / 'static',
 ]
 
+# Папка, куда Django будет собирать статические файлы при deploy
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -156,7 +163,6 @@ CKEDITOR_CONFIGS = {
 
 # Папка для загруженных файлов редактора
 CKEDITOR_5_UPLOAD_PATH = "uploads/"
-
 # Можно настроить тип редактора: Classic, Inline, Balloon и др.
 CKEDITOR_5_CONFIGS = {
     "default": {
@@ -169,5 +175,4 @@ CKEDITOR_5_CONFIGS = {
 
 CKEDITOR_UPLOAD_PATH = "uploads/"
 
-# Папка, куда Django будет собирать статические файлы при deploy
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+
